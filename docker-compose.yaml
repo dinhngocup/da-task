@@ -1,24 +1,36 @@
 version: '3'
 
 services:
+  mysql-docker-container:
+    image: mysql:latest
+    container_name: mysql-docker-container
+    environment:
+      - MYSQL_USER=dinhngocup
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=da-task
+      - MYSQL_ROOT_PASSWORD=password
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - mynetwork
+
   spring-boot-app:
-    image: da-task
+    build: .
     ports:
       - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-docker-container:3306/da-task
-      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_USERNAME=dinhngocup
       - SPRING_DATASOURCE_PASSWORD=password
-
-  mysql-container:
-    image: mysql:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root-password
-      - MYSQL_DATABASE=da-task
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=password
+    depends_on:
+      mysql-docker-container:
+        condition: service_healthy
     networks:
       - mynetwork
+
 
 networks:
   mynetwork:
