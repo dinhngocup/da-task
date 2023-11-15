@@ -17,24 +17,42 @@ import org.springframework.web.bind.annotation.RestController;
 import com.petproject.datask.dto.UserDTO;
 import com.petproject.datask.entity.User;
 import com.petproject.datask.service.UserService;
+import com.petproject.datask.utils.MessageConstant;
+import com.petproject.datask.utils.ResponseHandler;
 
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
-
 	@Autowired
 	private UserService userService;
-
-	private final String USERNAME_EXISTED_ERROR = "Username already existed";
 
 	@GetMapping
 	public Object getAll() {
 		try {
 			List<User> userList = userService.getAll();
-			return new ResponseEntity<>(userList, HttpStatus.OK);
+			return ResponseHandler.generateResponse(MessageConstant.SUCCESS.label, HttpStatus.OK, userList);
 		} catch (Exception e) {
-			return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+			log.error("Failed to get all users with exception {} {}.", e.getMessage(), e);
+			return ResponseHandler.generateResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@PostMapping("/admin")
+	public Object addAdmin(@RequestBody UserDTO user) {
+		try {
+			userService.add(user);
+			return ResponseHandler.generateResponse(MessageConstant.CREATED_SUCCESSFULLY.label, HttpStatus.CREATED);
+		} catch (Exception e) {
+			if (!e.getMessage().equals(MessageConstant.USERNAME_EXISTED.label)) {
+				log.error("Username of super admin already existed {}.", user.getUsername());
+				return ResponseHandler.generateResponse(MessageConstant.USERNAME_EXISTED.label,
+						HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+			log.error("Failed to add super admin {} with exception {} {}.", user.getUsername(), e.getMessage(), e);
+			return ResponseHandler.generateResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -42,13 +60,15 @@ public class UserController {
 	public Object add(@RequestBody UserDTO user) {
 		try {
 			userService.add(user);
-			return new ResponseEntity<String>(HttpStatus.CREATED);
+			return ResponseHandler.generateResponse(MessageConstant.CREATED_SUCCESSFULLY.label, HttpStatus.CREATED);
 		} catch (Exception e) {
-			// todo: generic exception
-			if (!e.getMessage().equals(USERNAME_EXISTED_ERROR)) {
-				return new ResponseEntity<>(USERNAME_EXISTED_ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+			if (!e.getMessage().equals(MessageConstant.USERNAME_EXISTED.label)) {
+				log.error("Username already existed {}.", user.getUsername());
+				return ResponseHandler.generateResponse(MessageConstant.USERNAME_EXISTED.label,
+						HttpStatus.INTERNAL_SERVER_ERROR);
 			}
-			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+			log.error("Failed to add user {} with exception {} {}.", user.getUsername(), e.getMessage(), e);
+			return ResponseHandler.generateResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -56,10 +76,10 @@ public class UserController {
 	public Object delete(@PathVariable String username) {
 		try {
 			userService.delete(username);
-			return new ResponseEntity<String>(HttpStatus.OK);
+			return ResponseHandler.generateResponse(MessageConstant.DELETED_SUCCESSFULLY.label, HttpStatus.OK);
 		} catch (Exception e) {
-			System.out.println(e + " " + e.getMessage());
-			return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+			log.error("Failed to delete user {} with exception {} {}.", username, e.getMessage(), e);
+			return ResponseHandler.generateResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 

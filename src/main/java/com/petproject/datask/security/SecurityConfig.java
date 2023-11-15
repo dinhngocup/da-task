@@ -19,8 +19,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.petproject.datask.utils.SecurityConstant;
+import com.petproject.datask.utils.Role;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -28,31 +31,44 @@ public class SecurityConfig {
 	private final UserDetailsService userDetailsService;
 
 	private final JWTAuthenticationFilter jwtAuthenticationFilter;
+	private final SuperAdminAuthenticationFilter superAdminAuthenticationFilter;
 
 	@Autowired
-	public SecurityConfig(UserDetailsService userDetailsService, JWTAuthenticationFilter jwtAuthenticationFilter) {
+	public SecurityConfig(UserDetailsService userDetailsService, JWTAuthenticationFilter jwtAuthenticationFilter,
+						  SuperAdminAuthenticationFilter superAdminAuthenticationFilter
+	) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.userDetailsService = userDetailsService;
+		this.superAdminAuthenticationFilter = superAdminAuthenticationFilter;
 	}
 
+	/**
+	 * Configures a custom SecurityFilterChain to manage authentication and
+	 * authorization for various endpoints within the application.
+	 *
+	 * @param http The HttpSecurity object for configuring security settings.
+	 * @return A SecurityFilterChain configured to handle authentication and authorization for multiple endpoints
+	 * based on
+	 * specific rules, including public access, role-based access, and general authentication for other endpoints.
+	 */
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests((requests) -> requests
-						.requestMatchers("/auth/**", "/users**").permitAll()
+						.requestMatchers("/auth/**", "/users/admin").permitAll()
 						.requestMatchers(HttpMethod.GET, "/tasks").permitAll()
-						//						.requestMatchers("/users**").hasRole(SecurityConstant.ADMIN)
-						.requestMatchers(HttpMethod.POST, "/tasks").hasRole(SecurityConstant.ADMIN)
-						.requestMatchers(HttpMethod.DELETE, "/tasks/**").hasRole(SecurityConstant.ADMIN)
-						.requestMatchers(HttpMethod.PUT, "/tasks/**").hasRole(SecurityConstant.EMPLOYEE)
+						.requestMatchers("/users**").hasRole(Role.ADMIN.name())
+						.requestMatchers(HttpMethod.POST, "/tasks").hasRole(Role.ADMIN.name())
+						.requestMatchers(HttpMethod.DELETE, "/tasks/**").hasRole(Role.ADMIN.name())
+						.requestMatchers(HttpMethod.PUT, "/tasks/**").hasAnyRole(Role.EMPLOYEE.name(), Role.ADMIN.name())
 						.anyRequest()
 						.authenticated()
 				)
 				.sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(
-						jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+						jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(superAdminAuthenticationFilter, JWTAuthenticationFilter.class);
 
 		return http.build();
 	}

@@ -1,6 +1,7 @@
 package com.petproject.datask.controller;
 
 import static com.petproject.datask.utils.SecurityConstant.SECRET_KEY_STRING;
+import static com.petproject.datask.utils.SecurityConstant.TOKEN_EXPIRATION;
 
 import java.util.Date;
 
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.petproject.datask.dto.AuthenticationDTO;
 import com.petproject.datask.dto.UserDTO;
 import com.petproject.datask.service.UserService;
+import com.petproject.datask.utils.MessageConstant;
+import com.petproject.datask.utils.ResponseHandler;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -43,12 +46,12 @@ public class AuthenticationController {
 
 			UserDTO user = userService.getByUsername(authenDTO.getUsername());
 			user.setAccessToken(generateToken(authenDTO.getUsername()));
-			return new ResponseEntity<>(user, HttpStatus.OK);
+			return ResponseHandler.generateResponse(MessageConstant.LOGIN_SUCCESSFULLY.label, HttpStatus.OK, user);
 		} catch (BadCredentialsException e) {
-			return new ResponseEntity<String>(HttpStatus.UNAUTHORIZED);
+			return ResponseHandler.generateResponse(MessageConstant.UNAUTHORIZED.label, HttpStatus.UNAUTHORIZED);
 		} catch (Exception e) {
 			log.error("Failed to handling request {}", e);
-			return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR);
+			return ResponseHandler.generateResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
@@ -57,7 +60,7 @@ public class AuthenticationController {
 		return Jwts.builder()
 				.setSubject(username)
 				.setIssuedAt(dateNow)
-				.setExpiration(new Date(dateNow.getTime() + 864000000L))
+				.setExpiration(new Date(dateNow.getTime() + TOKEN_EXPIRATION))
 				.signWith(SignatureAlgorithm.HS256, SECRET_KEY_STRING)
 				.compact();
 	}

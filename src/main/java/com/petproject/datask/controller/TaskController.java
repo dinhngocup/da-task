@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.petproject.datask.dto.TaskDTO;
 import com.petproject.datask.entity.Task;
 import com.petproject.datask.service.TaskService;
+import com.petproject.datask.utils.MessageConstant;
+import com.petproject.datask.utils.ResponseHandler;
 
 @RestController
 @RequestMapping("/tasks")
@@ -32,18 +34,18 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> findAll() {
-        return taskService.findAll();
+    public Object findAll() {
+        return ResponseHandler.generateResponse(MessageConstant.SUCCESS.label, HttpStatus.OK, taskService.findAll());
     }
 
     @GetMapping("/{id}")
     public Object findByTaskId(@PathVariable String id) {
         try {
             Task task = taskService.findById(Long.valueOf(id));
-            return task;
+            return ResponseHandler.generateResponse(MessageConstant.SUCCESS.label, HttpStatus.OK, task);
         } catch (Exception ex) {
             log.error("Failed to find task by id {} with exception {} {}.", id, ex.getMessage(), ex);
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseHandler.generateResponse(MessageConstant.RESOURCES_NOT_FOUND.label, HttpStatus.NOT_FOUND);
         }
 
     }
@@ -52,7 +54,7 @@ public class TaskController {
     public Object add(@RequestBody TaskDTO dto) {
         try {
             taskService.add(dto);
-            return new ResponseEntity<>(HttpStatus.OK);
+            return ResponseHandler.generateResponse(MessageConstant.CREATED_SUCCESSFULLY.label, HttpStatus.CREATED);
         } catch (Exception ex) {
             log.error("Failed to add new task {} {}.", ex.getMessage(), ex);
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -62,8 +64,8 @@ public class TaskController {
     @PutMapping("/{id}")
     public Object update(@RequestBody TaskDTO dto, @PathVariable String id) {
         try {
-            Task updatedTask = taskService.update(dto, Long.valueOf(id));
-            return new ResponseEntity<>(updatedTask, HttpStatus.OK);
+            taskService.update(dto, Long.valueOf(id));
+            return ResponseHandler.generateResponse(MessageConstant.UPDATED_SUCCESSFULLY.label, HttpStatus.OK);
         } catch (Exception ex) {
             log.error("Failed to update task id {} with exception {} {}.", id, ex.getMessage(), ex);
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -74,7 +76,7 @@ public class TaskController {
     public Object update(@PathVariable String id) {
         try {
             taskService.delete(Long.valueOf(id));
-            return new ResponseEntity<>(HttpStatus.OK);
+            return ResponseHandler.generateResponse(MessageConstant.DELETED_SUCCESSFULLY.label, HttpStatus.OK);
         } catch (Exception ex) {
             log.error("Failed to delete task id {} with exception {} {}.", id, ex.getMessage(), ex);
             return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

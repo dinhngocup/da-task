@@ -10,13 +10,17 @@ import com.petproject.datask.dto.UserDTO;
 import com.petproject.datask.entity.User;
 import com.petproject.datask.repository.UserRepository;
 import com.petproject.datask.service.UserService;
+import com.petproject.datask.utils.MessageConstant;
 import com.petproject.datask.utils.UserMapper;
 
 @Service
 public class UserServiceImpl implements UserService {
+	private final UserRepository userRepository;
 
 	@Autowired
-	private UserRepository userRepository;
+	public UserServiceImpl(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
 
 	/**
 	 * Get All Users.
@@ -51,7 +55,7 @@ public class UserServiceImpl implements UserService {
 
 		User entityHasSameEmail = userRepository.findByUsername(user.getUsername());
 		if (entityHasSameEmail != null) {
-			throw new Exception("Email already existed");
+			throw new Exception(MessageConstant.USERNAME_EXISTED.label);
 		}
 		String hashPassword = BCrypt.hashpw(user.getPswd(), BCrypt.gensalt());
 		user.setPswd(hashPassword);

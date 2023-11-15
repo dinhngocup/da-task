@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.petproject.datask.entity.User;
 import com.petproject.datask.repository.UserRepository;
+import com.petproject.datask.utils.MessageConstant;
 
 
 @Service
@@ -28,7 +29,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepository.findByUsername(username);
 		if (user == null) {
-			throw new UsernameNotFoundException("Username is invalid");
+			throw new UsernameNotFoundException(MessageConstant.INVALID_USERNAME.label);
 		}
 
 		List<GrantedAuthority> authorities = new ArrayList<>();
